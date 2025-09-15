@@ -13,7 +13,8 @@ M.silent = true
 M.save_cmd = nil
 
 -- What to do after checking if auto save conditions have been met.
-M.save_fn = function()
+---@param bufnr integer
+M.save_fn = function(bufnr)
   if M.save_cmd ~= nil then
     vim.cmd(M.save_cmd)
   elseif M.silent then

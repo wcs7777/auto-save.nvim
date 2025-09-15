@@ -21,7 +21,7 @@ local function can_save(bufnr)
   local buftype = vim.api.nvim_buf_get_option(bufnr, "buftype")
   local is_modified = vim.api.nvim_buf_get_option(bufnr, "modified")
   local valid_ft = not excluded_ft(vim.api.nvim_buf_get_option(bufnr, "filetype"))
-  local is_named = vim.fn.bufname() ~= ""
+  local is_named = vim.api.nvim_buf_get_name(bufnr) ~= ""
 
   return is_modifiable
     and not is_readonly
@@ -37,17 +37,21 @@ local function create_autocmd()
     group = vim.api.nvim_create_augroup(config.augroup_name, { clear = true }),
     pattern = "*",
     callback = function(args)
-      if can_save(args.buf or vim.api.nvim_get_current_buf()) then
+      local bufnr = args.buf or vim.api.nvim_get_current_buf()
+      if can_save(bufnr) then
+        local function save_fn()
+          return config.save_fn(bufnr)
+        end
         if config.timeout ~= nil then
           if M.save_timer ~= nil then
             M.save_timer:stop()
             ---@diagnostic disable-next-line: param-type-mismatch
-            M.save_timer = vim.defer_fn(config.save_fn, config.timeout)
+            M.save_timer = vim.defer_fn(save_fn, config.timeout)
           else
-            M.save_timer = vim.defer_fn(config.save_fn, config.timeout)
+            M.save_timer = vim.defer_fn(save_fn, config.timeout)
           end
         else
-          config.save_fn()
+          save_fn()
         end
       end
     end,
